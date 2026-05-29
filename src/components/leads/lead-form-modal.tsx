@@ -58,7 +58,7 @@ const EMPTY_FORM: FormData = {
   owner_id: "u1",
 }
 
-export interface LeadFormData extends FormData {}
+export type LeadFormData = FormData
 
 interface LeadFormModalProps {
   open: boolean
