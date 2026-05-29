@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={cn('font-sans', inter.variable)}>
+    <html lang="pt-BR" className={cn('dark font-sans', inter.variable)}>
       <body className="antialiased">
         <TooltipProvider>{children}</TooltipProvider>
       </body>
