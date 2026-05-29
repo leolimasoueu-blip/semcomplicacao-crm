@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   closestCorners,
   PointerSensor,
   useSensor,
@@ -12,11 +13,10 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core"
-import { arrayMove } from "@dnd-kit/sortable"
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { KanbanColumn } from "@/components/pipeline/kanban-column"
 import { DealCard } from "@/components/pipeline/deal-card"
 import { PIPELINE_STAGES } from "@/utils/pipeline-stages"
-import { MOCK_DEALS } from "@/lib/mock-data"
 import type { Deal, DealStage } from "@/types"
 
 interface KanbanBoardProps {
@@ -26,13 +26,23 @@ interface KanbanBoardProps {
   onDealsChange: (deals: Deal[]) => void
 }
 
-export function KanbanBoard({ onAddDeal, onEditDeal, deals, onDealsChange }: KanbanBoardProps) {
+export function KanbanBoard({ onAddDeal, onEditDeal, deals: dealsProp, onDealsChange }: KanbanBoardProps) {
+  // Local state for deals — isolates DnD re-renders from the parent page
+  const [deals, setDeals] = useState<Deal[]>(dealsProp)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
+
+  // Sync when parent updates (save/delete from the modal)
+  useEffect(() => {
+    setDeals(dealsProp)
+  }, [dealsProp])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   )
 
@@ -68,8 +78,9 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals, onDealsChange }: Kan
 
     if (!activeStage || !overStage || activeStage === overStage) return
 
-    onDealsChange(
-      deals.map((d) => (d.id === String(active.id) ? { ...d, stage: overStage } : d))
+    // Update local state only — no page re-render during drag
+    setDeals((prev) =>
+      prev.map((d) => (d.id === String(active.id) ? { ...d, stage: overStage } : d))
     )
   }
 
@@ -78,26 +89,37 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals, onDealsChange }: Kan
     setActiveId(null)
     setOverId(null)
 
-    if (!over) return
+    if (!over) {
+      // Cancelled — sync local state back to parent
+      onDealsChange(deals)
+      return
+    }
 
     const activeId = String(active.id)
     const overId = String(over.id)
-
     const activeStage = getStageForDeal(activeId)
     const overStage = getStageForDropTarget(overId)
 
-    if (!activeStage || !overStage) return
+    if (!activeStage || !overStage) {
+      onDealsChange(deals)
+      return
+    }
+
+    let finalDeals = deals
 
     if (activeStage === overStage && activeId !== overId) {
       const stageDeals = deals.filter((d) => d.stage === activeStage)
       const oldIndex = stageDeals.findIndex((d) => d.id === activeId)
       const newIndex = stageDeals.findIndex((d) => d.id === overId)
-      if (oldIndex === -1 || newIndex === -1) return
-
-      const reordered = arrayMove(stageDeals, oldIndex, newIndex)
-      const otherDeals = deals.filter((d) => d.stage !== activeStage)
-      onDealsChange([...otherDeals, ...reordered])
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(stageDeals, oldIndex, newIndex)
+        finalDeals = [...deals.filter((d) => d.stage !== activeStage), ...reordered]
+        setDeals(finalDeals)
+      }
     }
+
+    // Sync final position to parent (single re-render on drop)
+    onDealsChange(finalDeals)
   }
 
   const overStage = overId ? getStageForDropTarget(overId) : null
@@ -133,18 +155,20 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals, onDealsChange }: Kan
 }
 
 export function KanbanBoardContainer({
+  deals,
+  onDealsChange,
   onAddDeal,
   onEditDeal,
 }: {
+  deals: Deal[]
+  onDealsChange: (deals: Deal[]) => void
   onAddDeal: (stage: DealStage) => void
   onEditDeal: (deal: Deal) => void
 }) {
-  const [deals, setDeals] = useState<Deal[]>(MOCK_DEALS)
-
   return (
     <KanbanBoard
       deals={deals}
-      onDealsChange={setDeals}
+      onDealsChange={onDealsChange}
       onAddDeal={onAddDeal}
       onEditDeal={onEditDeal}
     />
