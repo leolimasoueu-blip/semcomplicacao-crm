@@ -52,6 +52,7 @@ export function DealCard({ deal, onEdit, isDragOverlay = false }: DealCardProps)
     <div
       ref={setNodeRef}
       style={style}
+      data-testid="deal-card"
       className={[
         "group relative bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer",
         "hover:shadow-md hover:border-slate-300 transition-all duration-150",
@@ -69,9 +70,16 @@ export function DealCard({ deal, onEdit, isDragOverlay = false }: DealCardProps)
           <p className="flex-1 text-sm font-semibold text-slate-800 leading-snug line-clamp-2">
             {deal.title}
           </p>
+          {/* Grip: DnD listener isolado — stopPropagation no pointerdown evita que o
+              preventDefault do PointerSensor bloqueie o onClick do card */}
           <button
             {...attributes}
             {...listeners}
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ;(listeners as Record<string, (e: React.PointerEvent) => void>)?.onPointerDown?.(e)
+            }}
             onClick={(e) => e.stopPropagation()}
             className="mt-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing transition-opacity"
             aria-label="Arrastar negócio"
