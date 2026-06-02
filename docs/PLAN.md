@@ -183,19 +183,19 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 
 ### Entregas
 
-- [ ] Criar projeto no Supabase e configurar `.env.local`
+- [x] Criar projeto no Supabase e configurar `.env.local` (3 chaves: URL, anon key, service role)
 - [ ] `supabase/migrations/001_initial_schema.sql` — tabelas: `workspaces`, `workspace_members`, `leads`, `deals`, `activities`, `subscriptions`
 - [ ] `supabase/migrations/002_rls_policies.sql` — políticas RLS para todas as tabelas (acesso por `workspace_id` via `workspace_members`)
 - [ ] `supabase/migrations/003_indexes.sql` — índices em `workspace_id`, `lead_id`, `created_at`
-- [ ] `src/lib/supabase/client.ts` — `createBrowserClient` (uso em Client Components)
-- [ ] `src/lib/supabase/server.ts` — `createServerClient` com cookies (uso em Server Components e Route Handlers)
+- [x] `src/lib/supabase/client.ts` — lazy singleton com `createBrowserClient<Database>` (uso em Client Components)
+- [x] `src/lib/supabase/server.ts` — `async createServerClient<Database>` com cookies (uso em Server Components e Route Handlers)
 - [ ] `src/lib/supabase/middleware.ts` — helper de refresh de sessão
 - [ ] `src/middleware.ts` — proteção de rotas: redireciona `/dashboard/*` para `/login` se sem sessão
 - [ ] Conectar `src/app/(auth)/login/page.tsx` ao Supabase Auth (`signInWithPassword`)
 - [ ] Conectar `src/app/(auth)/register/page.tsx` ao Supabase Auth (`signUp`) + criar workspace padrão
 - [ ] Conectar `src/app/(auth)/forgot-password/page.tsx` (`resetPasswordForEmail`)
 - [ ] Server Action de logout em `src/lib/supabase/actions.ts`
-- [ ] `src/types/supabase.ts` — tipos gerados (`supabase gen types typescript`)
+- [x] `src/types/supabase.ts` — scaffold manual das 6 tabelas (Row/Insert/Update); substituir por `supabase gen types typescript` após migrations
 - [ ] Testar fluxo completo: registro → login → acesso ao dashboard → logout
 
 **Commit final:** `feat: supabase schema with RLS and real auth integration`

@@ -1,7 +1,8 @@
-// Gerado manualmente como scaffold; substituir por `supabase gen types typescript` após conectar o projeto.
+// Gerado manualmente a partir de supabase/migrations/001_initial_schema.sql
+// Substituir por `npx supabase gen types typescript --project-id wtmyycwdkpfdjmeuilnk` após aplicar as migrations.
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       workspaces: {
@@ -30,6 +31,8 @@ export interface Database {
           workspace_id: string
           user_id: string
           role: 'admin' | 'member'
+          status: 'active' | 'pending'
+          invited_by: string | null
           created_at: string
         }
         Insert: {
@@ -37,6 +40,8 @@ export interface Database {
           workspace_id: string
           user_id: string
           role?: 'admin' | 'member'
+          status?: 'active' | 'pending'
+          invited_by?: string | null
           created_at?: string
         }
         Update: {
@@ -44,6 +49,8 @@ export interface Database {
           workspace_id?: string
           user_id?: string
           role?: 'admin' | 'member'
+          status?: 'active' | 'pending'
+          invited_by?: string | null
           created_at?: string
         }
       }
@@ -56,7 +63,7 @@ export interface Database {
           phone: string | null
           company: string | null
           position: string | null
-          status: string
+          status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted'
           owner_id: string | null
           created_at: string
           updated_at: string
@@ -69,7 +76,7 @@ export interface Database {
           phone?: string | null
           company?: string | null
           position?: string | null
-          status?: string
+          status?: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted'
           owner_id?: string | null
           created_at?: string
           updated_at?: string
@@ -82,7 +89,7 @@ export interface Database {
           phone?: string | null
           company?: string | null
           position?: string | null
-          status?: string
+          status?: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted'
           owner_id?: string | null
           created_at?: string
           updated_at?: string
@@ -95,7 +102,7 @@ export interface Database {
           lead_id: string
           title: string
           value: number | null
-          stage: string
+          stage: 'new_lead' | 'contacted' | 'proposal_sent' | 'negotiation' | 'closed_won' | 'closed_lost'
           owner_id: string | null
           due_date: string | null
           created_at: string
@@ -107,7 +114,7 @@ export interface Database {
           lead_id: string
           title: string
           value?: number | null
-          stage?: string
+          stage?: 'new_lead' | 'contacted' | 'proposal_sent' | 'negotiation' | 'closed_won' | 'closed_lost'
           owner_id?: string | null
           due_date?: string | null
           created_at?: string
@@ -119,7 +126,7 @@ export interface Database {
           lead_id?: string
           title?: string
           value?: number | null
-          stage?: string
+          stage?: 'new_lead' | 'contacted' | 'proposal_sent' | 'negotiation' | 'closed_won' | 'closed_lost'
           owner_id?: string | null
           due_date?: string | null
           created_at?: string
@@ -192,7 +199,26 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      is_workspace_member: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
+      is_workspace_admin: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
+    }
     Enums: Record<string, never>
   }
 }
+
+// Helpers de conveniência
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row']
+
+export type InsertDTO<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']
+
+export type UpdateDTO<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update']
