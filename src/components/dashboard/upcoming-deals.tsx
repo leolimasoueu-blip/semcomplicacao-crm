@@ -1,7 +1,7 @@
 import { CalendarDays, AlertCircle } from "lucide-react"
-import { MOCK_DEALS, MOCK_LEADS } from "@/lib/mock-data"
 import { getPipelineStage } from "@/utils/pipeline-stages"
 import { cn } from "@/lib/utils"
+import type { UpcomingDeal } from "@/lib/supabase/queries/dashboard"
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -25,21 +25,11 @@ function daysUntil(dateStr: string) {
   return Math.round((target.getTime() - today.getTime()) / 86400000)
 }
 
-function getUpcomingDeals() {
-  const today = new Date(new Date().toDateString())
-  const in7Days = new Date(today.getTime() + 7 * 86400000)
-  return MOCK_DEALS.filter(
-    (d) =>
-      d.due_date &&
-      d.stage !== "closed_won" &&
-      d.stage !== "closed_lost" &&
-      new Date(d.due_date + "T00:00:00") <= in7Days
-  ).sort((a, b) => a.due_date!.localeCompare(b.due_date!))
+interface UpcomingDealsProps {
+  deals: UpcomingDeal[]
 }
 
-export function UpcomingDeals() {
-  const deals = getUpcomingDeals()
-
+export function UpcomingDeals({ deals }: UpcomingDealsProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
@@ -54,9 +44,8 @@ export function UpcomingDeals() {
       ) : (
         <ul className="divide-y divide-slate-100">
           {deals.map((deal) => {
-            const lead = MOCK_LEADS.find((l) => l.id === deal.lead_id)
-            const stage = getPipelineStage(deal.stage)
-            const days = daysUntil(deal.due_date!)
+            const stage = getPipelineStage(deal.stage as import("@/types").DealStage)
+            const days = daysUntil(deal.due_date)
             const isUrgent = days <= 3
 
             return (
@@ -64,8 +53,8 @@ export function UpcomingDeals() {
                 <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", stage.colorDot)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{deal.title}</p>
-                  {lead && (
-                    <p className="text-xs text-muted-foreground truncate">{lead.company ?? lead.name}</p>
+                  {deal.leadLabel && (
+                    <p className="text-xs text-muted-foreground truncate">{deal.leadLabel}</p>
                   )}
                 </div>
                 <div className="shrink-0 text-right">
@@ -77,7 +66,7 @@ export function UpcomingDeals() {
                     )}
                   >
                     {isUrgent && <AlertCircle className="size-3 shrink-0" />}
-                    {formatDate(deal.due_date!)}
+                    {formatDate(deal.due_date)}
                   </div>
                 </div>
               </li>

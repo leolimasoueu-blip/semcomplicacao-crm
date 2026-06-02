@@ -1,18 +1,22 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { ACTIVITY_CONFIG } from "@/components/leads/activity-item"
+import { createActivity } from "@/lib/supabase/actions"
 import type { ActivityType } from "@/types"
 
 const ACTIVITY_TYPES: ActivityType[] = ["call", "email", "meeting", "note"]
 
 interface AddActivityFormProps {
-  onAdd: (type: ActivityType, description: string) => void
+  workspaceId: string
+  leadId: string
 }
 
-export function AddActivityForm({ onAdd }: AddActivityFormProps) {
+export function AddActivityForm({ workspaceId, leadId }: AddActivityFormProps) {
+  const router = useRouter()
   const [type, setType] = useState<ActivityType>("note")
   const [description, setDescription] = useState("")
   const [error, setError] = useState("")
@@ -26,9 +30,14 @@ export function AddActivityForm({ onAdd }: AddActivityFormProps) {
     }
     setError("")
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
-    onAdd(type, description.trim())
-    setDescription("")
+
+    const result = await createActivity(workspaceId, leadId, type, description)
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setDescription("")
+      router.refresh()
+    }
     setIsLoading(false)
   }
 

@@ -1,7 +1,6 @@
 "use client"
 
-import { MOCK_DEALS } from "@/lib/mock-data"
-import { PIPELINE_STAGES } from "@/utils/pipeline-stages"
+import type { FunnelItem } from "@/lib/supabase/queries/dashboard"
 
 const STAGE_COLORS: Record<string, string> = {
   new_lead: "bg-slate-400",
@@ -21,16 +20,11 @@ const STAGE_TEXT_COLORS: Record<string, string> = {
   closed_lost: "text-red-600",
 }
 
-function buildFunnelData() {
-  return PIPELINE_STAGES.map((stage) => ({
-    id: stage.id,
-    name: stage.label,
-    count: MOCK_DEALS.filter((d) => d.stage === stage.id).length,
-  }))
+interface DashboardFunnelChartProps {
+  data: FunnelItem[]
 }
 
-export function DashboardFunnelChart() {
-  const data = buildFunnelData()
+export function DashboardFunnelChart({ data }: DashboardFunnelChartProps) {
   const maxCount = Math.max(...data.map((d) => d.count), 1)
 
   return (

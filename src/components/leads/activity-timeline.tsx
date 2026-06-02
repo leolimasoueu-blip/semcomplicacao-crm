@@ -1,12 +1,17 @@
 import { ActivityItem } from "@/components/leads/activity-item"
-import { getMemberById } from "@/lib/mock-data"
 import type { Activity } from "@/types"
 
 interface ActivityTimelineProps {
   activities: Activity[]
+  currentUserId?: string
+  currentUserName?: string
 }
 
-export function ActivityTimeline({ activities }: ActivityTimelineProps) {
+export function ActivityTimeline({
+  activities,
+  currentUserId,
+  currentUserName,
+}: ActivityTimelineProps) {
   if (activities.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -21,7 +26,11 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
         <ActivityItem
           key={activity.id}
           activity={activity}
-          member={getMemberById(activity.created_by)}
+          memberName={
+            activity.created_by && activity.created_by === currentUserId
+              ? (currentUserName ?? "Você")
+              : undefined
+          }
           isLast={index === activities.length - 1}
         />
       ))}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
 import {
   Dialog,
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
-import { MOCK_MEMBERS } from "@/lib/mock-data"
+import { createLead, updateLead, deleteLead } from "@/lib/supabase/actions"
 import type { Lead, LeadStatus } from "@/types"
 
 const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
@@ -21,7 +22,7 @@ const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
   { value: "contacted", label: "Contatado" },
   { value: "qualified", label: "Qualificado" },
   { value: "unqualified", label: "Desqualificado" },
-  { value: "customer", label: "Cliente" },
+  { value: "converted", label: "Cliente" },
 ]
 
 interface FormData {
@@ -31,12 +32,12 @@ interface FormData {
   company: string
   position: string
   status: LeadStatus
-  owner_id: string
 }
 
 interface FormErrors {
   name?: string
   email?: string
+  server?: string
 }
 
 function validate(data: FormData): FormErrors {
@@ -55,18 +56,14 @@ const EMPTY_FORM: FormData = {
   company: "",
   position: "",
   status: "new",
-  owner_id: "u1",
 }
-
-export type LeadFormData = FormData
 
 interface LeadFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: "create" | "edit"
   lead?: Lead
-  onSave: (data: LeadFormData) => void
-  onDelete?: (id: string) => void
+  workspaceId: string
 }
 
 export function LeadFormModal({
@@ -74,9 +71,9 @@ export function LeadFormModal({
   onOpenChange,
   mode,
   lead,
-  onSave,
-  onDelete,
+  workspaceId,
 }: LeadFormModalProps) {
+  const router = useRouter()
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -95,7 +92,6 @@ export function LeadFormModal({
           company: lead.company ?? "",
           position: lead.position ?? "",
           status: lead.status,
-          owner_id: lead.owner_id ?? "u1",
         })
       } else {
         setForm(EMPTY_FORM)
@@ -115,9 +111,30 @@ export function LeadFormModal({
       setErrors(errs)
       return
     }
+    setErrors({})
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
-    onSave(form)
+
+    const input = {
+      name: form.name,
+      email: form.email || null,
+      phone: form.phone || null,
+      company: form.company || null,
+      position: form.position || null,
+      status: form.status,
+    }
+
+    const result =
+      mode === "create"
+        ? await createLead(workspaceId, input)
+        : await updateLead(lead!.id, input)
+
+    if (result.error) {
+      setErrors({ server: result.error })
+      setIsLoading(false)
+      return
+    }
+
+    router.refresh()
     setIsLoading(false)
     onOpenChange(false)
   }
@@ -127,10 +144,15 @@ export function LeadFormModal({
       setConfirmDelete(true)
       return
     }
-    if (!lead || !onDelete) return
+    if (!lead) return
     setIsDeleting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    onDelete(lead.id)
+    const result = await deleteLead(lead.id)
+    if (result.error) {
+      setErrors({ server: result.error })
+      setIsDeleting(false)
+      return
+    }
+    router.refresh()
     setIsDeleting(false)
     onOpenChange(false)
   }
@@ -203,7 +225,7 @@ export function LeadFormModal({
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="lf-status">Status</Label>
                 <select
                   id="lf-status"
@@ -218,27 +240,15 @@ export function LeadFormModal({
                   ))}
                 </select>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lf-owner">Responsável</Label>
-                <select
-                  id="lf-owner"
-                  value={form.owner_id}
-                  onChange={(e) => setField("owner_id", e.target.value)}
-                  className={selectClass}
-                >
-                  {MOCK_MEMBERS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
+
+            {errors.server && (
+              <p className="text-xs text-destructive">{errors.server}</p>
+            )}
           </div>
 
           <DialogFooter className="mt-2">
-            {mode === "edit" && onDelete && (
+            {mode === "edit" && (
               <Button
                 type="button"
                 variant="ghost"
