@@ -189,14 +189,20 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 - [x] `supabase/migrations/003_indexes.sql` — 13 índices em `workspace_id`, `lead_id`, `stage`, `created_at`, `stripe_customer_id`; aplicado e verificado
 - [x] `src/lib/supabase/client.ts` — lazy singleton com `createBrowserClient<Database>` (uso em Client Components)
 - [x] `src/lib/supabase/server.ts` — `async createServerClient<Database>` com cookies (uso em Server Components e Route Handlers)
-- [ ] `src/lib/supabase/middleware.ts` — helper de refresh de sessão
-- [ ] `src/middleware.ts` — proteção de rotas: redireciona `/dashboard/*` para `/login` se sem sessão
-- [ ] Conectar `src/app/(auth)/login/page.tsx` ao Supabase Auth (`signInWithPassword`)
-- [ ] Conectar `src/app/(auth)/register/page.tsx` ao Supabase Auth (`signUp`) + criar workspace padrão
-- [ ] Conectar `src/app/(auth)/forgot-password/page.tsx` (`resetPasswordForEmail`)
-- [ ] Server Action de logout em `src/lib/supabase/actions.ts`
-- [x] `src/types/supabase.ts` — tipos alinhados com schema real + helpers `Tables<T>`, `InsertDTO<T>`, `UpdateDTO<T>`
-- [ ] Testar fluxo completo: registro → login → acesso ao dashboard → logout
+- [x] `src/lib/supabase/middleware.ts` — helper de refresh de sessão
+- [x] `src/middleware.ts` — proteção de rotas + redirect de auth routes para usuários logados
+- [x] `src/app/auth/callback/route.ts` — exchange de code PKCE (email confirmation, reset de senha)
+- [x] `src/lib/supabase/admin.ts` — cliente service_role para operações que bypassam RLS
+- [x] `src/lib/supabase/actions.ts` — Server Actions: `signOut` e `createWorkspace` (workspace + member + subscription)
+- [x] Conectar `src/app/(auth)/login/page.tsx` ao Supabase Auth (`signInWithPassword`)
+- [x] Conectar `src/app/(auth)/register/page.tsx` ao Supabase Auth (`signUp`) + fluxo de confirmação de e-mail
+- [x] Conectar `src/app/(auth)/forgot-password/page.tsx` (`resetPasswordForEmail`)
+- [x] Conectar `src/app/(auth)/onboarding/page.tsx` ao banco (cria workspace + member admin + subscription free)
+- [x] `src/types/supabase.ts` — tipos alinhados com schema real + `Relationships` por tabela + helpers
+- [x] `src/components/shared/workspace-switcher.tsx` — carrega workspaces reais via Supabase browser client
+- [x] `src/components/shared/header.tsx` — exibe nome/e-mail real do usuário + logout via Server Action
+- [x] `src/app/(dashboard)/layout.tsx` — Server Component que busca user e passa para AppShell
+- [ ] Testar fluxo completo: registro → onboarding → login → acesso ao dashboard → logout
 
 **Commit final:** `feat: supabase schema with RLS and real auth integration`
 

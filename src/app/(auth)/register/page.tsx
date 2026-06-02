@@ -3,11 +3,13 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { CheckCircle2 } from "lucide-react"
 import { AuthCard } from "@/components/shared/auth-card"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 interface FormErrors {
   name?: string
@@ -23,9 +25,7 @@ function validate(
   confirmPassword: string
 ): FormErrors {
   const errors: FormErrors = {}
-  if (!name.trim()) {
-    errors.name = "Nome é obrigatório"
-  }
+  if (!name.trim()) errors.name = "Nome é obrigatório"
   if (!email) {
     errors.email = "E-mail é obrigatório"
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -52,6 +52,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [confirmSent, setConfirmSent] = useState(false)
 
   function clearError(field: keyof FormErrors) {
     setErrors((v) => ({ ...v, [field]: undefined }))
@@ -66,8 +67,55 @@ export default function RegisterPage() {
     }
     setErrors({})
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    router.push("/onboarding")
+
+    const supabase = getSupabaseBrowserClient()
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    })
+
+    if (error) {
+      setIsLoading(false)
+      const msg = error.message.toLowerCase()
+      if (msg.includes("already registered") || msg.includes("already exists")) {
+        setErrors({ email: "Este e-mail já está cadastrado" })
+      } else {
+        setErrors({ email: error.message })
+      }
+      return
+    }
+
+    if (data.session) {
+      // Confirmação de e-mail desabilitada: sessão imediata
+      router.push("/onboarding")
+    } else {
+      // Confirmação de e-mail habilitada: aguardar verificação
+      setIsLoading(false)
+      setConfirmSent(true)
+    }
+  }
+
+  if (confirmSent) {
+    return (
+      <AuthCard title="Verifique seu e-mail" description="">
+        <div className="space-y-4 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <CheckCircle2 className="size-12 text-sky-400" />
+            <p className="text-sm text-muted-foreground">
+              Enviamos um link de confirmação para{" "}
+              <span className="font-medium text-foreground">{email}</span>.
+              Clique no link para ativar sua conta.
+            </p>
+          </div>
+          <Link href="/login">
+            <Button variant="outline" size="lg" className="w-full">
+              Voltar ao login
+            </Button>
+          </Link>
+        </div>
+      </AuthCard>
+    )
   }
 
   return (
@@ -83,16 +131,11 @@ export default function RegisterPage() {
             type="text"
             placeholder="Seu nome"
             value={name}
-            onChange={(e) => {
-              setName(e.target.value)
-              clearError("name")
-            }}
+            onChange={(e) => { setName(e.target.value); clearError("name") }}
             aria-invalid={!!errors.name}
             autoComplete="name"
           />
-          {errors.name && (
-            <p className="text-xs text-destructive">{errors.name}</p>
-          )}
+          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -102,16 +145,11 @@ export default function RegisterPage() {
             type="email"
             placeholder="voce@empresa.com"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value)
-              clearError("email")
-            }}
+            onChange={(e) => { setEmail(e.target.value); clearError("email") }}
             aria-invalid={!!errors.email}
             autoComplete="email"
           />
-          {errors.email && (
-            <p className="text-xs text-destructive">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -121,16 +159,11 @@ export default function RegisterPage() {
             type="password"
             placeholder="Mínimo 8 caracteres"
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value)
-              clearError("password")
-            }}
+            onChange={(e) => { setPassword(e.target.value); clearError("password") }}
             aria-invalid={!!errors.password}
             autoComplete="new-password"
           />
-          {errors.password && (
-            <p className="text-xs text-destructive">{errors.password}</p>
-          )}
+          {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -140,10 +173,7 @@ export default function RegisterPage() {
             type="password"
             placeholder="••••••••"
             value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value)
-              clearError("confirmPassword")
-            }}
+            onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirmPassword") }}
             aria-invalid={!!errors.confirmPassword}
             autoComplete="new-password"
           />
@@ -152,12 +182,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full gap-2"
-          disabled={isLoading}
-        >
+        <Button type="submit" size="lg" className="w-full gap-2" disabled={isLoading}>
           {isLoading && (
             <LoadingSpinner size="sm" className="text-primary-foreground" />
           )}

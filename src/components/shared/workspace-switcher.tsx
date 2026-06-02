@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Check, ChevronDown, Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Check, ChevronDown, Loader2, Plus } from "lucide-react"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const MOCK_WORKSPACES = [
-  { id: "1", name: "Minha Empresa", slug: "minha-empresa" },
-  { id: "2", name: "Projeto Freelance", slug: "projeto-freelance" },
-]
+type WorkspaceEntry = {
+  id: string
+  name: string
+  slug: string
+}
 
 function WorkspaceAvatar({ name }: { name: string }) {
   return (
@@ -24,8 +26,74 @@ function WorkspaceAvatar({ name }: { name: string }) {
 }
 
 export function WorkspaceSwitcher() {
-  const [currentId, setCurrentId] = useState(MOCK_WORKSPACES[0].id)
-  const current = MOCK_WORKSPACES.find((w) => w.id === currentId)!
+  const [workspaces, setWorkspaces] = useState<WorkspaceEntry[]>([])
+  const [currentId, setCurrentId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+
+    async function load() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      // Busca memberships. Filtramos em JS para evitar problemas de inferência
+      // TypeScript com union literals nas colunas enum do Supabase.
+      const { data: raw } = await supabase
+        .from("workspace_members")
+        .select("workspace_id, status, user_id")
+
+      type MemberRow = { workspace_id: string; user_id: string; status: string }
+      const allMemberships = (raw ?? []) as unknown as MemberRow[]
+
+      const ids = allMemberships
+        .filter((m) => m.user_id === user.id && m.status === "active")
+        .map((m) => m.workspace_id)
+
+      if (!ids.length) {
+        setLoading(false)
+        return
+      }
+      const { data: rawWs } = await supabase
+        .from("workspaces")
+        .select("id, name, slug")
+        .in("id", ids)
+
+      const ws = (rawWs ?? []) as unknown as WorkspaceEntry[]
+
+      if (ws.length) {
+        setWorkspaces(ws)
+        setCurrentId(ws[0].id)
+      }
+      setLoading(false)
+    }
+
+    load()
+  }, [])
+
+  const current = workspaces.find((w) => w.id === currentId)
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 px-2 py-2 text-sm text-slate-400">
+        <Loader2 className="size-4 animate-spin" />
+        <span className="truncate">Carregando...</span>
+      </div>
+    )
+  }
+
+  if (!current) {
+    return (
+      <div className="px-2 py-2 text-sm text-slate-500 truncate">
+        Sem workspace
+      </div>
+    )
+  }
 
   return (
     <DropdownMenu>
@@ -35,7 +103,7 @@ export function WorkspaceSwitcher() {
         <ChevronDown className="ml-auto size-4 shrink-0 text-slate-400" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" sideOffset={8} className="min-w-52">
-        {MOCK_WORKSPACES.map((workspace) => (
+        {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
             onClick={() => setCurrentId(workspace.id)}
