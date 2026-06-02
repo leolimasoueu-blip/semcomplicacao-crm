@@ -14,7 +14,7 @@ export async function inviteMember(
   workspaceId: string,
   email: string,
   role: 'admin' | 'member'
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; inviteUrl?: string }> {
   const supabase = await getSupabaseServerClient()
   const admin = getSupabaseAdminClient()
 
@@ -110,12 +110,9 @@ export async function inviteMember(
   })
 
   if (emailError) {
-    // Roll back invite if email fails
-    await admin
-      .from('workspace_invites')
-      .delete()
-      .eq('token', invite.token)
-    return { error: 'Erro ao enviar e-mail de convite. Verifique a configuração do Resend.' }
+    // Email failed (e.g. Resend free plan restriction) — keep the invite and return the link
+    revalidatePath('/settings')
+    return { inviteUrl }
   }
 
   revalidatePath('/settings')
