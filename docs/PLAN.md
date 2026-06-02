@@ -184,9 +184,9 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 ### Entregas
 
 - [x] Criar projeto no Supabase e configurar `.env.local` (3 chaves: URL, anon key, service role)
-- [x] `supabase/migrations/001_initial_schema.sql` — tabelas: `workspaces`, `workspace_members`, `leads`, `deals`, `activities`, `subscriptions`
-- [x] `supabase/migrations/002_rls_policies.sql` — políticas RLS para todas as tabelas (acesso por `workspace_id` via `workspace_members`)
-- [x] `supabase/migrations/003_indexes.sql` — índices em `workspace_id`, `lead_id`, `created_at`
+- [x] `supabase/migrations/001_initial_schema.sql` — 6 tabelas, FKs, CHECK constraints, trigger `updated_at`; aplicado e verificado no Supabase Studio
+- [x] `supabase/migrations/002_rls_policies.sql` — RLS ativo nas 6 tabelas, 18 políticas, funções `is_workspace_member` / `is_workspace_admin`; verificado via REST (anon retorna `[]`)
+- [x] `supabase/migrations/003_indexes.sql` — 13 índices em `workspace_id`, `lead_id`, `stage`, `created_at`, `stripe_customer_id`; aplicado e verificado
 - [x] `src/lib/supabase/client.ts` — lazy singleton com `createBrowserClient<Database>` (uso em Client Components)
 - [x] `src/lib/supabase/server.ts` — `async createServerClient<Database>` com cookies (uso em Server Components e Route Handlers)
 - [ ] `src/lib/supabase/middleware.ts` — helper de refresh de sessão
@@ -195,7 +195,7 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 - [ ] Conectar `src/app/(auth)/register/page.tsx` ao Supabase Auth (`signUp`) + criar workspace padrão
 - [ ] Conectar `src/app/(auth)/forgot-password/page.tsx` (`resetPasswordForEmail`)
 - [ ] Server Action de logout em `src/lib/supabase/actions.ts`
-- [x] `src/types/supabase.ts` — scaffold manual das 6 tabelas (Row/Insert/Update); substituir por `supabase gen types typescript` após migrations
+- [x] `src/types/supabase.ts` — tipos alinhados com schema real + helpers `Tables<T>`, `InsertDTO<T>`, `UpdateDTO<T>`
 - [ ] Testar fluxo completo: registro → login → acesso ao dashboard → logout
 
 **Commit final:** `feat: supabase schema with RLS and real auth integration`
