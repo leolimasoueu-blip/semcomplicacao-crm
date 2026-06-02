@@ -184,9 +184,9 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 ### Entregas
 
 - [x] Criar projeto no Supabase e configurar `.env.local` (3 chaves: URL, anon key, service role)
-- [ ] `supabase/migrations/001_initial_schema.sql` — tabelas: `workspaces`, `workspace_members`, `leads`, `deals`, `activities`, `subscriptions`
-- [ ] `supabase/migrations/002_rls_policies.sql` — políticas RLS para todas as tabelas (acesso por `workspace_id` via `workspace_members`)
-- [ ] `supabase/migrations/003_indexes.sql` — índices em `workspace_id`, `lead_id`, `created_at`
+- [x] `supabase/migrations/001_initial_schema.sql` — tabelas: `workspaces`, `workspace_members`, `leads`, `deals`, `activities`, `subscriptions`
+- [x] `supabase/migrations/002_rls_policies.sql` — políticas RLS para todas as tabelas (acesso por `workspace_id` via `workspace_members`)
+- [x] `supabase/migrations/003_indexes.sql` — índices em `workspace_id`, `lead_id`, `created_at`
 - [x] `src/lib/supabase/client.ts` — lazy singleton com `createBrowserClient<Database>` (uso em Client Components)
 - [x] `src/lib/supabase/server.ts` — `async createServerClient<Database>` com cookies (uso em Server Components e Route Handlers)
 - [ ] `src/lib/supabase/middleware.ts` — helper de refresh de sessão
