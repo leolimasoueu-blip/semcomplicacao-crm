@@ -243,14 +243,20 @@ Plano de execução dividido em 12 milestones. Estratégia: **interface primeiro
 - [ ] Conectar `AddActivityForm` e `ActivityTimeline` ao banco real
 - [ ] `src/lib/supabase/queries/dashboard.ts` — queries agregadas: total leads, deals abertos, valor pipeline, taxa de conversão, leads por etapa
 - [ ] Substituir dados mock do Dashboard pelos resultados das queries
-- [ ] `src/lib/supabase/queries/workspaces.ts` — `getWorkspacesByUser(userId)`, `createWorkspace`, `inviteMember`, `updateMemberRole`, `removeMember`
-- [ ] Instalar e configurar Resend (`npm install resend`)
-- [ ] `src/lib/resend/templates/invite-email.tsx` — template HTML do e-mail de convite
-- [ ] `src/app/api/workspaces/invite/route.ts` — POST: gera token, salva em `workspace_members` (status pending), envia e-mail via Resend
-- [ ] `src/app/(auth)/invite/[token]/page.tsx` — conectar ao backend: validar token, aceitar convite, criar sessão
-- [ ] Workspace switcher funcional: carregar workspaces reais, trocar contexto e redirecionar
-- [ ] `src/app/(dashboard)/settings/page.tsx` — gerenciamento de membros e papéis (real)
-- [ ] Enforcement de limite Free na criação de leads e convites (checar `subscriptions`)
+- [x] `src/lib/supabase/queries/workspaces.ts` — `getWorkspacesByUser`, `getWorkspaceMembers`, `getPendingInvites`, `getWorkspaceInfo`, `getWorkspaceSubscription`
+- [x] Instalar e configurar Resend (`npm install resend`) — v6.12.4
+- [x] `src/lib/resend/client.ts` — instância do Resend SDK
+- [x] `src/lib/resend/templates/invite-email.tsx` — template HTML do e-mail de convite
+- [x] `supabase/migrations/004_workspace_invites.sql` — tabela `workspace_invites` (token, email, role, expires_at, accepted_at) + RLS + índices
+- [x] `src/app/(dashboard)/settings/actions.ts` — Server Actions: `inviteMember`, `cancelInvite`, `removeMember`, `updateMemberRole`
+- [x] `src/app/(auth)/invite/[token]/page.tsx` — conectar ao backend: validar token, aceitar convite, criar sessão
+- [x] `src/app/(auth)/invite/[token]/actions.ts` — `acceptInvite` (valida token, cria membership, marca aceito)
+- [x] `src/app/(dashboard)/settings/page.tsx` — gerenciamento de membros e papéis (real)
+- [x] `src/components/settings/member-row.tsx` — row com dropdown para alterar papel/remover membro
+- [x] `src/components/settings/invite-form.tsx` — formulário de convite por e-mail + role select
+- [x] `src/components/settings/pending-invite-row.tsx` — convites pendentes com botão cancelar
+- [x] Enforcement de limite Free na criação de convites (máximo 2 membros)
+- [ ] Workspace switcher funcional: trocar contexto e redirecionar
 
 **Commit final:** `feat: activities, dashboard metrics and workspaces with invites via Resend`
 
