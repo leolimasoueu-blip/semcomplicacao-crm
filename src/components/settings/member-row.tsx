@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Trash2, Loader2, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -36,6 +37,7 @@ export function MemberRow({ member, currentUserId, isCurrentUserAdmin, workspace
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const isSelf = member.user_id === currentUserId
+  const router = useRouter()
 
   function handleRoleChange(role: 'admin' | 'member') {
     if (role === member.role) return
@@ -43,6 +45,7 @@ export function MemberRow({ member, currentUserId, isCurrentUserAdmin, workspace
     startTransition(async () => {
       const result = await updateMemberRole(member.id, role, workspaceId)
       if (result?.error) setError(result.error)
+      else router.refresh()
     })
   }
 
@@ -51,6 +54,7 @@ export function MemberRow({ member, currentUserId, isCurrentUserAdmin, workspace
     startTransition(async () => {
       const result = await removeMember(member.id, currentUserId)
       if (result?.error) setError(result.error)
+      else router.refresh()
     })
   }
 

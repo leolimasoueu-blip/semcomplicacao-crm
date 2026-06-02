@@ -42,7 +42,7 @@ export function InviteForm({ workspaceId, disabled, disabledReason }: Props) {
         setSuccess(true)
         setEmail('')
         setRole('member')
-        setTimeout(() => setSuccess(false), 4000)
+        setTimeout(() => setSuccess(false), 6000)
       }
     })
   }

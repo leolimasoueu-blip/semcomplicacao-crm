@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { X, Loader2, Mail } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,12 +16,14 @@ interface Props {
 export function PendingInviteRow({ invite, isAdmin }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   function handleCancel() {
     setError(null)
     startTransition(async () => {
       const result = await cancelInvite(invite.id)
       if (result?.error) setError(result.error)
+      else router.refresh()
     })
   }
 
