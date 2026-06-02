@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Pencil, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LeadStatusBadge } from "@/components/leads/lead-status-badge"
-import { getMemberById } from "@/lib/mock-data"
 import type { Lead } from "@/types"
 
 const PAGE_SIZE = 8
@@ -31,9 +30,12 @@ function formatDate(dateStr: string) {
 interface LeadTableProps {
   leads: Lead[]
   onEdit: (lead: Lead) => void
+  currentUserId?: string
+  currentUserName?: string
+  currentUserInitials?: string
 }
 
-export function LeadTable({ leads, onEdit }: LeadTableProps) {
+export function LeadTable({ leads, onEdit, currentUserId, currentUserName, currentUserInitials }: LeadTableProps) {
   const router = useRouter()
   const [sortKey, setSortKey] = useState<SortKey>("created_at")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
@@ -95,7 +97,7 @@ export function LeadTable({ leads, onEdit }: LeadTableProps) {
           </thead>
           <tbody className="divide-y">
             {paginated.map((lead) => {
-              const owner = getMemberById(lead.owner_id)
+              const isOwner = currentUserId && lead.owner_id === currentUserId
               return (
                 <tr
                   key={lead.id}
@@ -122,13 +124,13 @@ export function LeadTable({ leads, onEdit }: LeadTableProps) {
                     <LeadStatusBadge status={lead.status} />
                   </td>
                   <td className="px-4 py-3">
-                    {owner ? (
+                    {isOwner ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                          {owner.initials}
+                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+                          {currentUserInitials ?? "?"}
                         </div>
                         <span className="text-muted-foreground text-xs truncate max-w-[100px]">
-                          {owner.name}
+                          {currentUserName ?? "Você"}
                         </span>
                       </div>
                     ) : (

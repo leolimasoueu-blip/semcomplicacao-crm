@@ -1,7 +1,6 @@
 import { Phone, Mail, CalendarDays, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Activity, ActivityType } from "@/types"
-import type { MockMember } from "@/lib/mock-data"
 
 const ACTIVITY_CONFIG: Record<
   ActivityType,
@@ -45,11 +44,11 @@ function formatDate(dateStr: string) {
 
 interface ActivityItemProps {
   activity: Activity
-  member?: MockMember
+  memberName?: string
   isLast?: boolean
 }
 
-export function ActivityItem({ activity, member, isLast }: ActivityItemProps) {
+export function ActivityItem({ activity, memberName, isLast }: ActivityItemProps) {
   const config = ACTIVITY_CONFIG[activity.type]
   const Icon = config.icon
 
@@ -65,8 +64,8 @@ export function ActivityItem({ activity, member, isLast }: ActivityItemProps) {
       <div className={cn("pb-6 flex-1 min-w-0", isLast && "pb-0")}>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-foreground">{config.label}</span>
-          {member && (
-            <span className="text-xs text-muted-foreground">por {member.name}</span>
+          {memberName && (
+            <span className="text-xs text-muted-foreground">por {memberName}</span>
           )}
           <span className="text-xs text-muted-foreground ml-auto shrink-0">
             {formatDate(activity.created_at)}

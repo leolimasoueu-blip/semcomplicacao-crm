@@ -17,6 +17,7 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { KanbanColumn } from "@/components/pipeline/kanban-column"
 import { DealCard } from "@/components/pipeline/deal-card"
 import { PIPELINE_STAGES } from "@/utils/pipeline-stages"
+import { updateDealStage } from "@/lib/supabase/actions"
 import type { Deal, DealStage } from "@/types"
 
 interface KanbanBoardProps {
@@ -27,31 +28,24 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ onAddDeal, onEditDeal, deals: dealsProp, onDealsChange }: KanbanBoardProps) {
-  // Local state for deals — isolates DnD re-renders from the parent page
   const [deals, setDeals] = useState<Deal[]>(dealsProp)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
 
-  // Sync when parent updates (save/delete from the modal)
   useEffect(() => {
     setDeals(dealsProp)
   }, [dealsProp])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
   const activeDeal = activeId ? deals.find((d) => d.id === activeId) : null
 
   const getStageForDeal = useCallback(
-    (dealId: string): DealStage | null => {
-      return deals.find((d) => d.id === dealId)?.stage ?? null
-    },
+    (dealId: string): DealStage | null =>
+      deals.find((d) => d.id === dealId)?.stage ?? null,
     [deals]
   )
 
@@ -69,16 +63,13 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals: dealsProp, onDealsCh
 
   function handleDragOver(event: DragOverEvent) {
     setOverId(event.over ? String(event.over.id) : null)
-
     const { active, over } = event
     if (!over) return
 
     const activeStage = getStageForDeal(String(active.id))
     const overStage = getStageForDropTarget(String(over.id))
-
     if (!activeStage || !overStage || activeStage === overStage) return
 
-    // Update local state only — no page re-render during drag
     setDeals((prev) =>
       prev.map((d) => (d.id === String(active.id) ? { ...d, stage: overStage } : d))
     )
@@ -90,7 +81,6 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals: dealsProp, onDealsCh
     setOverId(null)
 
     if (!over) {
-      // Cancelled — sync local state back to parent
       onDealsChange(deals)
       return
     }
@@ -118,8 +108,10 @@ export function KanbanBoard({ onAddDeal, onEditDeal, deals: dealsProp, onDealsCh
       }
     }
 
-    // Sync final position to parent (single re-render on drop)
     onDealsChange(finalDeals)
+
+    // Persist new stage — fire and forget (optimistic update already applied)
+    void updateDealStage(activeId, overStage)
   }
 
   const overStage = overId ? getStageForDropTarget(overId) : null

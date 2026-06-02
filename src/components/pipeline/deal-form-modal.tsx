@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
 import {
   Dialog,
@@ -13,15 +14,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
-import { MOCK_MEMBERS, MOCK_LEADS } from "@/lib/mock-data"
+import { createDeal, updateDeal, deleteDeal } from "@/lib/supabase/actions"
 import { PIPELINE_STAGES } from "@/utils/pipeline-stages"
 import type { Deal, DealStage } from "@/types"
+
+export type LeadOption = { id: string; name: string; company: string | null }
 
 interface FormData {
   title: string
   value: string
   lead_id: string
-  owner_id: string
   stage: DealStage
   due_date: string
 }
@@ -29,6 +31,7 @@ interface FormData {
 interface FormErrors {
   title?: string
   value?: string
+  server?: string
 }
 
 function validate(data: FormData): FormErrors {
@@ -44,19 +47,9 @@ const EMPTY_FORM = (stage: DealStage): FormData => ({
   title: "",
   value: "",
   lead_id: "",
-  owner_id: "u1",
   stage,
   due_date: "",
 })
-
-export interface DealFormData {
-  title: string
-  value: number
-  lead_id: string
-  owner_id: string | null
-  stage: DealStage
-  due_date: string | null
-}
 
 interface DealFormModalProps {
   open: boolean
@@ -64,8 +57,8 @@ interface DealFormModalProps {
   mode: "create" | "edit"
   deal?: Deal
   defaultStage?: DealStage
-  onSave: (data: DealFormData) => void
-  onDelete?: (id: string) => void
+  leads: LeadOption[]
+  workspaceId: string
 }
 
 export function DealFormModal({
@@ -74,9 +67,10 @@ export function DealFormModal({
   mode,
   deal,
   defaultStage = "new_lead",
-  onSave,
-  onDelete,
+  leads,
+  workspaceId,
 }: DealFormModalProps) {
+  const router = useRouter()
   const [form, setForm] = useState<FormData>(EMPTY_FORM(defaultStage))
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -91,8 +85,7 @@ export function DealFormModal({
         setForm({
           title: deal.title,
           value: deal.value > 0 ? String(deal.value) : "",
-          lead_id: deal.lead_id,
-          owner_id: deal.owner_id ?? "u1",
+          lead_id: deal.lead_id ?? "",
           stage: deal.stage,
           due_date: deal.due_date ?? "",
         })
@@ -114,16 +107,29 @@ export function DealFormModal({
       setErrors(errs)
       return
     }
+    setErrors({})
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
-    onSave({
+
+    const input = {
       title: form.title.trim(),
       value: form.value ? Number(form.value.replace(",", ".")) : 0,
       lead_id: form.lead_id,
-      owner_id: form.owner_id || null,
       stage: form.stage,
       due_date: form.due_date || null,
-    })
+    }
+
+    const result =
+      mode === "create"
+        ? await createDeal(workspaceId, input)
+        : await updateDeal(deal!.id, input)
+
+    if (result.error) {
+      setErrors({ server: result.error })
+      setIsLoading(false)
+      return
+    }
+
+    router.refresh()
     setIsLoading(false)
     onOpenChange(false)
   }
@@ -133,10 +139,15 @@ export function DealFormModal({
       setConfirmDelete(true)
       return
     }
-    if (!deal || !onDelete) return
+    if (!deal) return
     setIsDeleting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    onDelete(deal.id)
+    const result = await deleteDeal(deal.id)
+    if (result.error) {
+      setErrors({ server: result.error })
+      setIsDeleting(false)
+      return
+    }
+    router.refresh()
     setIsDeleting(false)
     onOpenChange(false)
   }
@@ -198,7 +209,7 @@ export function DealFormModal({
                 className={selectClass}
               >
                 <option value="">— selecione —</option>
-                {MOCK_LEADS.map((l) => (
+                {leads.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.name}{l.company ? ` (${l.company})` : ""}
                   </option>
@@ -206,43 +217,29 @@ export function DealFormModal({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="df-owner">Responsável</Label>
-                <select
-                  id="df-owner"
-                  value={form.owner_id}
-                  onChange={(e) => setField("owner_id", e.target.value)}
-                  className={selectClass}
-                >
-                  {MOCK_MEMBERS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="df-stage">Etapa</Label>
-                <select
-                  id="df-stage"
-                  value={form.stage}
-                  onChange={(e) => setField("stage", e.target.value as DealStage)}
-                  className={selectClass}
-                >
-                  {PIPELINE_STAGES.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="df-stage">Etapa</Label>
+              <select
+                id="df-stage"
+                value={form.stage}
+                onChange={(e) => setField("stage", e.target.value as DealStage)}
+                className={selectClass}
+              >
+                {PIPELINE_STAGES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {errors.server && (
+              <p className="text-xs text-destructive">{errors.server}</p>
+            )}
           </div>
 
           <DialogFooter className="mt-2">
-            {mode === "edit" && onDelete && (
+            {mode === "edit" && (
               <Button
                 type="button"
                 variant="ghost"

@@ -2,7 +2,7 @@ export type Plan = 'free' | 'pro'
 
 export type MemberRole = 'admin' | 'member'
 
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'customer'
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted'
 
 export type DealStage =
   | 'new_lead'

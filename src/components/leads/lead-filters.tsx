@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useTransition } from "react"
 import { Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,23 +13,32 @@ const STATUS_OPTIONS: Array<{ value: LeadStatus | "all"; label: string }> = [
   { value: "contacted", label: "Contatado" },
   { value: "qualified", label: "Qualificado" },
   { value: "unqualified", label: "Desqualificado" },
-  { value: "customer", label: "Cliente" },
+  { value: "converted", label: "Cliente" },
 ]
 
-interface LeadFiltersProps {
-  search: string
-  onSearchChange: (value: string) => void
-  status: LeadStatus | "all"
-  onStatusChange: (value: LeadStatus | "all") => void
-}
+export function LeadFilters() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
 
-export function LeadFilters({
-  search,
-  onSearchChange,
-  status,
-  onStatusChange,
-}: LeadFiltersProps) {
+  const search = searchParams.get("search") ?? ""
+  const status = (searchParams.get("status") ?? "all") as LeadStatus | "all"
   const hasFilters = search !== "" || status !== "all"
+
+  function updateParams(updates: Record<string, string>) {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === "" || value === "all") {
+        params.delete(key)
+      } else {
+        params.set(key, value)
+      }
+    }
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`)
+    })
+  }
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -35,15 +46,15 @@ export function LeadFilters({
         <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           placeholder="Buscar por nome ou empresa..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
+          defaultValue={search}
+          onChange={(e) => updateParams({ search: e.target.value })}
           className="pl-8"
         />
       </div>
 
       <select
         value={status}
-        onChange={(e) => onStatusChange(e.target.value as LeadStatus | "all")}
+        onChange={(e) => updateParams({ status: e.target.value })}
         className="h-9 rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:w-48"
       >
         {STATUS_OPTIONS.map((opt) => (
@@ -57,10 +68,7 @@ export function LeadFilters({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            onSearchChange("")
-            onStatusChange("all")
-          }}
+          onClick={() => updateParams({ search: "", status: "all" })}
           className="shrink-0"
         >
           <X className="size-4" />
