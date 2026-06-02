@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 interface FormErrors {
   email?: string
@@ -41,7 +42,16 @@ export default function LoginPage() {
     }
     setErrors({})
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
+
+    const supabase = getSupabaseBrowserClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      setIsLoading(false)
+      setErrors({ password: "E-mail ou senha incorretos" })
+      return
+    }
+
     router.push("/dashboard")
   }
 

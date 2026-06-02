@@ -1,16 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Building2 } from "lucide-react"
 import { AuthCard } from "@/components/shared/auth-card"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { createWorkspace } from "@/lib/supabase/actions"
 
 export default function OnboardingPage() {
-  const router = useRouter()
   const [workspaceName, setWorkspaceName] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -28,8 +27,14 @@ export default function OnboardingPage() {
     }
     setError("")
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    router.push("/dashboard")
+
+    const result = await createWorkspace(trimmed)
+    // Se createWorkspace chamar redirect(), o browser navega antes de chegarmos aqui.
+    // Só chegamos aqui se houver um erro.
+    if (result?.error) {
+      setError(result.error)
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -59,12 +64,7 @@ export default function OnboardingPage() {
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full gap-2"
-          disabled={isLoading}
-        >
+        <Button type="submit" size="lg" className="w-full gap-2" disabled={isLoading}>
           {isLoading && (
             <LoadingSpinner size="sm" className="text-primary-foreground" />
           )}

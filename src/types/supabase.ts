@@ -1,5 +1,5 @@
 // Gerado manualmente a partir de supabase/migrations/001_initial_schema.sql
-// Substituir por `npx supabase gen types typescript --project-id wtmyycwdkpfdjmeuilnk` após aplicar as migrations.
+// Para regenerar: npx supabase gen types typescript --project-id <project-id> > src/types/supabase.ts
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -24,6 +24,7 @@ export type Database = {
           slug?: string
           created_at?: string
         }
+        Relationships: []
       }
       workspace_members: {
         Row: {
@@ -53,6 +54,15 @@ export type Database = {
           invited_by?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       leads: {
         Row: {
@@ -94,6 +104,15 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       deals: {
         Row: {
@@ -132,6 +151,22 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "deals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       activities: {
         Row: {
@@ -161,6 +196,22 @@ export type Database = {
           user_id?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "activities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       subscriptions: {
         Row: {
@@ -196,9 +247,20 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
-    Views: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       is_workspace_member: {
         Args: { p_workspace_id: string }
@@ -209,7 +271,12 @@ export type Database = {
         Returns: boolean
       }
     }
-    Enums: Record<string, never>
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
