@@ -5,6 +5,7 @@ import { Plus, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
+import { UpgradeBanner } from "@/components/shared/upgrade-banner"
 import { LeadTable } from "@/components/leads/lead-table"
 import { LeadFilters } from "@/components/leads/lead-filters"
 import { LeadFormModal } from "@/components/leads/lead-form-modal"
@@ -21,9 +22,10 @@ interface LeadsViewProps {
   workspaceId: string
   currentUser: CurrentUser
   searchActive: boolean
+  atLeadLimit: boolean
 }
 
-export function LeadsView({ leads, workspaceId, currentUser, searchActive }: LeadsViewProps) {
+export function LeadsView({ leads, workspaceId, currentUser, searchActive, atLeadLimit }: LeadsViewProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined)
 
@@ -49,6 +51,13 @@ export function LeadsView({ leads, workspaceId, currentUser, searchActive }: Lea
           </Button>
         }
       />
+
+      {atLeadLimit && (
+        <UpgradeBanner
+          workspaceId={workspaceId}
+          message="Você atingiu o limite de 50 leads do plano Free. Faça upgrade para Pro para adicionar mais."
+        />
+      )}
 
       <Suspense>
         <LeadFilters />
