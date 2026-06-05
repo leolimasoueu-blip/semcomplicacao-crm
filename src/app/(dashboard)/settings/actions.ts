@@ -5,8 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { resend } from '@/lib/resend/client'
 import { inviteEmailHtml } from '@/lib/resend/templates/invite-email'
-
-const FREE_MEMBER_LIMIT = 2
+import { canAddMember } from '@/lib/limits'
 
 // ─── Invite ───────────────────────────────────────────────────────────────────
 
@@ -37,25 +36,8 @@ export async function inviteMember(
   }
 
   // Check plan limit
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('plan')
-    .eq('workspace_id', workspaceId)
-    .single()
-
-  if (subscription?.plan === 'free') {
-    const { count } = await supabase
-      .from('workspace_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('workspace_id', workspaceId)
-      .eq('status', 'active')
-
-    if ((count ?? 0) >= FREE_MEMBER_LIMIT) {
-      return {
-        error: `O plano Free permite no máximo ${FREE_MEMBER_LIMIT} membros. Faça upgrade para Pro.`,
-      }
-    }
-  }
+  const limit = await canAddMember(workspaceId)
+  if (!limit.allowed) return { error: limit.reason }
 
   // Check for existing pending invite for this email
   const { data: existingInvite } = await admin

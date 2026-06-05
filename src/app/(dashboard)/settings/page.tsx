@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { Users, Mail, Building2, Crown, Zap } from 'lucide-react'
+import Link from 'next/link'
+import { Users, Mail, Building2, Crown, Zap, CreditCard, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { MemberRow } from '@/components/settings/member-row'
 import { InviteForm } from '@/components/settings/invite-form'
@@ -12,8 +13,7 @@ import {
   getPendingInvites,
   getWorkspaceSubscription,
 } from '@/lib/supabase/queries/workspaces'
-
-const FREE_MEMBER_LIMIT = 2
+import { canAddMember, FREE_MEMBER_LIMIT } from '@/lib/limits'
 
 export default async function SettingsPage() {
   const [workspaceId, supabase] = await Promise.all([
@@ -26,18 +26,19 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [workspace, members, pendingInvites, subscription] = await Promise.all([
+  const [workspace, members, pendingInvites, subscription, memberLimit] = await Promise.all([
     getWorkspaceInfo(workspaceId),
     getWorkspaceMembers(workspaceId),
     getPendingInvites(workspaceId),
     getWorkspaceSubscription(workspaceId),
+    canAddMember(workspaceId),
   ])
 
   const currentMember = members.find((m) => m.user_id === user.id)
   const isAdmin = currentMember?.role === 'admin'
   const plan = subscription?.plan ?? 'free'
   const memberCount = members.length
-  const atMemberLimit = plan === 'free' && memberCount >= FREE_MEMBER_LIMIT
+  const atMemberLimit = !memberLimit.allowed
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -73,7 +74,7 @@ export default async function SettingsPage() {
         </div>
         {plan === 'free' && (
           <a
-            href="#"
+            href="/settings/billing"
             className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 transition-colors"
           >
             Fazer upgrade
@@ -163,6 +164,24 @@ export default async function SettingsPage() {
           )}
         </section>
       )}
+      {/* Billing link */}
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <Link
+          href="/settings/billing"
+          className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors rounded-xl"
+        >
+          <div className="flex items-center gap-3">
+            <CreditCard className="size-4 text-slate-500" />
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Faturamento</p>
+              <p className="text-xs text-slate-500">
+                Plano {plan === 'pro' ? 'Pro' : 'Free'} · Gerencie sua assinatura
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="size-4 text-slate-400" />
+        </Link>
+      </section>
     </div>
   )
 }

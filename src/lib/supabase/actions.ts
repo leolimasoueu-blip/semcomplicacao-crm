@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getSupabaseServerClient } from './server'
 import { getSupabaseAdminClient } from './admin'
+import { canAddLead } from '@/lib/limits'
 import type { LeadStatus, DealStage, ActivityType } from '@/types'
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -84,6 +85,9 @@ export async function createLead(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
+
+  const limit = await canAddLead(workspaceId)
+  if (!limit.allowed) return { error: limit.reason }
 
   const { error } = await supabase.from('leads').insert({
     workspace_id: workspaceId,

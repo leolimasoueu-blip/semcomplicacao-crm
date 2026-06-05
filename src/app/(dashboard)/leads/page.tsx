@@ -1,6 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getActiveWorkspaceId } from "@/lib/supabase/queries/workspaces"
 import { getLeads } from "@/lib/supabase/queries/leads"
+import { canAddLead } from "@/lib/limits"
 import { LeadsView } from "@/components/leads/leads-view"
 import type { LeadStatus } from "@/types"
 
@@ -25,13 +26,13 @@ export default async function LeadsPage({ searchParams }: Props) {
     getSupabaseServerClient(),
   ])
 
-  const [leads, { data: { user } }] = await Promise.all([
-    getLeads(workspaceId, {
-      search,
-      status: status as LeadStatus | "all",
-    }),
+  const [leads, { data: { user } }, limitCheck] = await Promise.all([
+    getLeads(workspaceId, { search, status: status as LeadStatus | "all" }),
     supabase.auth.getUser(),
+    canAddLead(workspaceId),
   ])
+
+  const atLeadLimit = !limitCheck.allowed
 
   const meta = user?.user_metadata as { full_name?: string } | undefined
   const displayName =
@@ -44,6 +45,7 @@ export default async function LeadsPage({ searchParams }: Props) {
       workspaceId={workspaceId}
       currentUser={{ id: user!.id, displayName, initials }}
       searchActive={search !== "" || status !== "all"}
+      atLeadLimit={atLeadLimit}
     />
   )
 }
